@@ -4,7 +4,7 @@
 
 Java client library for interacting with the XTB xAPI service.
 
-API documentation: http://developers.xstore.pro/api
+xAPI reference: http://developers.xstore.pro/api
 
 ## Java version
 
@@ -12,7 +12,7 @@ This project is designed to compile and run on Java 1.8 and higher.
 
 ## xAPI Compliance
 
-This client implements xAPI Protocol version 2.5.0: http://developers.xstore.pro/documentation/
+Library implements xAPI Protocol version `2.5.0`. Full specification is available at http://developers.xstore.pro/documentation/.
 
 ## How to use it?
 
@@ -69,7 +69,7 @@ using `XApi#newClient(Codec, XApiConfig)` function. In such case you can omit ad
 3. Open streaming connection *(optional)*
 
 ```java
-XApiStream stream=client.openStream();
+XApiStream stream = client.openStream();
 new Thread(() -> {
     try {
         stream.listen();
@@ -94,10 +94,10 @@ List<SymbolRecord> symbols = client.getAllSymbols();
 The client and streams use TCP connections internally, so it's a good idea to close them once they're not needed
 anymore.
 
-In case any streams were opened by the client, those will have to be called first: `XApiStream#close()`.
-Closing of the parent client will close all the child streams as per xAPI Specification:
-http://developers.xstore.pro/documentation/#available-streaming-commands,
-however it will be done so from the server-side and it will result in an exception in `XApiStream#listen()` method.
+In case any streams were opened by the client, those will have to be closed first.
+Closing the parent client will close all the child streams as specified
+[here](http://developers.xstore.pro/documentation/#available-streaming-commands),
+however it will be done so from the server-side outside of client's control.
 For that reason it's best to close all the streams before closing the client.
 
 ```java
