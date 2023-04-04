@@ -1,6 +1,6 @@
 package com.olafparfienczyk.xapi.client;
 
-import com.olafparfienczyk.xapi.client.codec.Codec;
+import com.olafparfienczyk.xapi.client.codec.JsonCodec;
 import com.olafparfienczyk.xapi.client.codec.CodecException;
 import com.olafparfienczyk.xapi.client.connection.XApiConnection;
 import com.olafparfienczyk.xapi.client.connection.XApiConnectionFactory;
@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class XApiStreamImpl implements XApiStream {
 
-    private class MessageHandler<T> {
+    private class MessageHandler<T extends Message<?>> {
 
         final Class<? extends T> messageType;
         final Collection<StreamListener<T>> listeners = new ConcurrentLinkedQueue<>();
@@ -36,7 +36,7 @@ public class XApiStreamImpl implements XApiStream {
         void handle(String encodedMessage) throws XApiException {
             T msg;
             try {
-                msg = codec.decode(encodedMessage, messageType);
+                msg = jsonCodec.decode(encodedMessage, messageType);
             } catch (CodecException e) {
                 throw new XApiException("Failed to decode message", e);
             }
@@ -64,7 +64,7 @@ public class XApiStreamImpl implements XApiStream {
     private final Map<String, MessageHandler<?>> messageHandlersByCommands = new ConcurrentHashMap<>();
     private final XApiConnection connection;
     private final String streamSessionId;
-    private final Codec codec;
+    private final JsonCodec jsonCodec;
 
     private volatile boolean closed = false;
 
@@ -72,7 +72,7 @@ public class XApiStreamImpl implements XApiStream {
                           String host,
                           int port,
                           String streamSessionId,
-                          Codec codec) throws XApiException {
+                          JsonCodec jsonCodec) throws XApiException {
         if (streamSessionId == null) {
             throw new XApiException("streamSessionId not provided. Is the main connection authenticated?");
         }
@@ -83,7 +83,7 @@ public class XApiStreamImpl implements XApiStream {
         }
 
         this.streamSessionId = streamSessionId;
-        this.codec = codec;
+        this.jsonCodec = jsonCodec;
     }
 
     @Override
@@ -138,7 +138,7 @@ public class XApiStreamImpl implements XApiStream {
                 String encodedMessage;
                 try {
                     encodedMessage = connection.receive();
-                    command = codec.decode(
+                    command = jsonCodec.decode(
                                     encodedMessage,
                                     GenericMessage.class)
                             .getCommand();
@@ -177,7 +177,7 @@ public class XApiStreamImpl implements XApiStream {
     private void send(StreamingCommand command) throws XApiException {
         writeLock.lock();
         try {
-            connection.send(codec.encode(command));
+            connection.send(jsonCodec.encode(command));
         } catch (IOException e) {
             close();
             throw new XApiException("Failed to send command", e);
@@ -187,7 +187,7 @@ public class XApiStreamImpl implements XApiStream {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void addListener(String command, StreamListener<T> listener, Class<? extends T> messageType) {
+    private <T extends Message<?>> void addListener(String command, StreamListener<T> listener, Class<? extends T> messageType) {
         MessageHandler<T> handler = (MessageHandler<T>) messageHandlersByCommands
                 .computeIfAbsent(command, key -> new MessageHandler<>(messageType));
         handler.listeners.add(listener);

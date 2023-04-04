@@ -8,11 +8,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 
-public class JacksonCodec implements Codec {
+public class JacksonJsonCodec implements JsonCodec {
 
     private final ObjectMapper objectMapper;
 
-    public JacksonCodec() {
+    public JacksonJsonCodec() {
         this.objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -21,7 +21,7 @@ public class JacksonCodec implements Codec {
         objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
     }
 
-    public JacksonCodec(ObjectMapper objectMapper) {
+    public JacksonJsonCodec(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 

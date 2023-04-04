@@ -30,7 +30,7 @@ With the above in mind, the basic idea is as following:
     <version>TODO</version>
 </dependency>
 <dependency>
-    <!-- In case you are not using jackson you can omit this and provide your own codec -->
+    <!-- In case you are not using jackson you can omit this and provide your own jsonCodec -->
     <groupId>com.fasterxml.jackson.core</groupId>
     <artifactId>jackson-databind</artifactId>
     <version>YOUR JACKSON VERSION</version>
@@ -63,7 +63,7 @@ client.setCredentials(
             .build());
 ```
 
-*You can also provide custom JSON deserializer by implementing `com.olafparfienczyk.xapi.client.Codec` interface and
+*You can also provide custom JSON deserializer by implementing `com.olafparfienczyk.xapi.client.JsonCodec` interface and
 using `XApi#newClient(Codec, XApiConfig)` function. In such case you can omit adding `jackson-databind` dependency.*
 
 3. Open streaming connection *(optional)*

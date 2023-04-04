@@ -1,6 +1,6 @@
 package com.olafparfienczyk.xapi.client;
 
-import com.olafparfienczyk.xapi.client.codec.Codec;
+import com.olafparfienczyk.xapi.client.codec.JsonCodec;
 import com.olafparfienczyk.xapi.client.connection.XApiConnection;
 import com.olafparfienczyk.xapi.client.connection.XApiConnectionFactory;
 import com.olafparfienczyk.xapi.client.model.SymbolRecord;
@@ -16,7 +16,7 @@ import java.util.List;
 public class XApiClientImpl implements XApiClient {
 
     private final XApiConnectionFactory connectionFactory;
-    private final Codec codec;
+    private final JsonCodec jsonCodec;
     private final XApiConfig config;
 
     private XApiConnection connection;
@@ -25,14 +25,19 @@ public class XApiClientImpl implements XApiClient {
 
     private String streamSessionId;
 
-    public XApiClientImpl(XApiConnectionFactory connectionFactory, Codec codec, XApiConfig config) {
+    public XApiClientImpl(XApiConnectionFactory connectionFactory, JsonCodec jsonCodec, XApiConfig config) {
         this.connectionFactory = connectionFactory;
-        this.codec = codec;
+        this.jsonCodec = jsonCodec;
         this.config = config;
     }
 
     @Override
     public void setCredentials(XApiCredentials credentials) {
+        if(connection != null) {
+            logoutSilently();
+            connection.close();
+        }
+
         this.credentials = credentials;
     }
 
@@ -62,15 +67,25 @@ public class XApiClientImpl implements XApiClient {
                 config.getStreamingHost(),
                 config.getStreamingPort(),
                 streamSessionId,
-                codec);
+                jsonCodec);
     }
 
     @Override
     public void close() {
         if (connection != null) {
+            logoutSilently();
             connection.close();
         }
         closed = true;
+    }
+
+    private void logoutSilently() {
+        if(!connection.isClosed()) {
+            try {
+                exchange(new Command().setCommand("logout"), Response.class);
+            } catch (XApiException ignored) {
+            }
+        }
     }
 
     private void ensureConnectivity() throws XApiException {
@@ -104,8 +119,8 @@ public class XApiClientImpl implements XApiClient {
 
     private <T extends Response> T exchange(Command command, Class<T> responseType) throws XApiException {
         try {
-            connection.send(codec.encode(command));
-            T response = codec.decode(connection.receive(), responseType);
+            connection.send(jsonCodec.encode(command));
+            T response = jsonCodec.decode(connection.receive(), responseType);
             if (!response.isStatus()) {
                 throw new XApiException("Command failed: "
                         + response.getErrorDescr()
